@@ -488,7 +488,7 @@ Drives.xml:SD_Drives.txt
 ) do (
 	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
 	echo Ищем %%a
-	(dir /s /b "*%%a" 2>nul) > "%home%\%%b"
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
   )
 )
 
@@ -504,7 +504,7 @@ Drives.xml:GP_Drives.txt
 ) do (
 	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
 	echo Ищем %%a
-	(dir /s /b "*%%a" 2>nul) > "%home%\%%b"
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
   )
 )
 
@@ -523,7 +523,7 @@ azureProfile.json:USR_azureProfile_json.txt
 ) do (
 	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
 	echo Ищем %%a
-	(dir /s /b "*%%a" 2>nul) > "%home%\%%b"
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
   )
 )
 
@@ -542,7 +542,7 @@ azureProfile.json:DaS_azureProfile_json.txt
 ) do (
 	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
 	echo Ищем %%a
-	(dir /s /b "*%%a" 2>nul) > "%home%\%%b"
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
   )
 )
 
@@ -620,7 +620,24 @@ web.config:web_config.txt
 
 	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
 	echo Ищем %%a
-	(dir /s /b /A:-D %%a 2>nul) > "%home%\%%b"
+	(dir /s /b /A:-D %%a 2>nul | findstr /v ".dll" | findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+echo Поиск по вхождениям
+for %%i in (
+pass:pass_infiles.txt
+cred:cred_infiles.txt
+vnc:vnc_infiles.txt
+password:password_infiles.txt
+credential:credential_infiles.txt
+config:config_infiles.txt
+ssh:ssh_infiles.txt
+elasticsearch:elasticsearch_infiles.txt
+) do (
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo Ищем %%a
+	(dir /s /b /A:-D "*%%a*" 2>nul | findstr /v ".dll"| findstr /v /i "%home%") > "%home%\%%b"
   )
 )
 
@@ -647,36 +664,21 @@ bashrc:bashrc_files.txt
 ) do (
 	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
 	echo Ищем %%a
-	(dir /s /b /A:-D "*%%a" 2>nul) > "%home%\%%b"
+	(dir /s /b /A:-D "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
   )
 )
 
 
-echo Поиск по вхождениям
-for %%i in (
-pass:pass_infiles.txt
-cred:cred_infiles.txt
-vnc:vnc_infiles.txt
-password:password_infiles.txt
-credential:credential_infiles.txt
-config:config_infiles.txt
-ssh:ssh_infiles.txt
-elasticsearch:elasticsearch_infiles.txt
-) do (
-	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
-	echo Ищем %%a
-	(dir /s /b /A:-D "*%%a*" 2>nul) > "%home%\%%b"
-  )
-)
+
 
 rem Я б с радостью сделал список, но оно не работает с символами типа *. Мб потом разделю, посмотрим
-(dir /s /b /A:-D *vnc*.ini 2>nul) > "%home%\vnc_ini.txt"
-(dir /s /b /A:-D *vnc*.c*nf* 2>nul) > "%home%\vnc_configs.txt"
-(dir /s /b /A:-D *vnc*.txt 2>nul) > "%home%\vnc_txt.txt"
-(dir /s /b /A:-D *vnc*.xml 2>nul) > "%home%\vnc_xml.txt"
-(dir /s /b /A:-D *config*.php 2>nul) > "%home%\config_php.txt"
-(dir /s /b /A:-D elasticsearch.y*ml 2>nul) > "%home%\elasticsearch.y_ml.txt"
-(dir /s /b /A:-D kibana.y*ml 2>nul) > "%home%\kibana_yml.txt"
+(dir /s /b /A:-D *vnc*.ini 2>nul | findstr /v /i "%home%") > "%home%\vnc_ini.txt"
+(dir /s /b /A:-D *vnc*.c*nf* 2>nul | findstr /v /i "%home%") > "%home%\vnc_configs.txt"
+(dir /s /b /A:-D *vnc*.txt 2>nul | findstr /v /i "%home%") > "%home%\vnc_txt.txt"
+(dir /s /b /A:-D *vnc*.xml 2>nul | findstr /v /i "%home%") > "%home%\vnc_xml.txt"
+(dir /s /b /A:-D *config*.php 2>nul | findstr /v /i "%home%") > "%home%\config_php.txt"
+(dir /s /b /A:-D elasticsearch.y*ml 2>nul | findstr /v /i "%home%") > "%home%\elasticsearch.y_ml.txt"
+(dir /s /b /A:-D kibana.y*ml 2>nul | findstr /v /i "%home%") > "%home%\kibana_yml.txt"
 
 
 echo Файлы интереса
