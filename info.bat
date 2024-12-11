@@ -5,10 +5,10 @@ chcp 65001 >nul
 set "starttime=%time%"
 set "folder=Data_%COMPUTERNAME%_%random%"
 cls
-echo Name:    [%folder%] 
-echo Begin: [%starttime%]
-echo Status: [1\4]
-echo Work: [Basic environment data]
+echo Имя:    [%folder%] 
+echo Начало: [%starttime%]
+echo Статус: [1\4]
+echo Работа: [Основные данные окружения]
 md %folder%
 cd %folder%
 md system_information
@@ -22,10 +22,10 @@ whoami /all >> "./Основные_данные.txt"
 qwinsta  >> "./Основные_данные.txt"
 wmic os get osarchitecture >> "./Основные_данные.txt"
 
-echo Local profiles
+echo Локальные профили
 (dir /b  %USERPROFILE%\.. 2>nul) > "./Локальные_профили.txt"
 
-echo Sessions
+echo Сессии
 (klist sessions 2>nul) > "./Сессии.txt"
 
 echo Переменные среды
@@ -391,16 +391,17 @@ KB2778930:"Vista, 7, 8, 2008, 2008R2, 2012, RT - hwnd_broadcast"
 )
 
 echo Проверка прав доступа к файлам процессов
-ECHO.   [i] Checking file permissions of running processes (File backdooring - maybe the same files start automatically when Administrator logs in)
-for /f "tokens=2 delims='='" %%x in ('wmic process list full^|find /i "executablepath"^|find /i /v "system32"^|find ":"') do (
-	for /f eol^=^"^ delims^=^" %%z in ('ECHO.%%x') do (
-		icacls "%%z" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%" && ECHO.
-	)
+for /f "tokens=2 delims==" %%x in ('wmic process list full ^| find /i "executablepath" ^| find /i /v "system32" ^| find ":"') do (
+    for /f eol^=^"^ delims^=^" %%z in ('echo.%%x') do (
+        (icacls "%%z" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%") >> "./Процессы_подр".txt
+        if %ERRORLEVEL% EQU 0 echo. %%z >> "./Процессы_кратк".txt 
+    )
 )
-ECHO.
-ECHO.   [i] Checking directory permissions of running processes (DLL injection)
-for /f "tokens=2 delims='='" %%x in ('wmic process list full^|find /i "executablepath"^|find /i /v "system32"^|find ":"') do for /f eol^=^"^ delims^=^" %%y in ('ECHO.%%x') do (
-	icacls "%%~dpy\" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%" && ECHO.
+for /f "tokens=2 delims==" %%x in ('wmic process list full^|find /i "executablepath"^|find /i /v "system32"^|find ":"') do (
+    for /f "tokens=* delims=" %%y in ('echo.%%x') do (
+        icacls "%%~dpy\" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%" >> "./Процессы2_подр".txt
+        if %errorlevel% EQU 0  echo %%~dpy >> "./Процессы2_кратк".txt 
+    )
 )
 
 echo Права доступа к файлам служб
