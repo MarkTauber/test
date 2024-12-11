@@ -391,12 +391,7 @@ KB2778930:"Vista, 7, 8, 2008, 2008R2, 2012, RT - hwnd_broadcast"
 )
 
 echo Проверка прав доступа к файлам процессов
-for /f "tokens=2 delims==" %%x in ('wmic process list full ^| find /i "executablepath" ^| find /i /v "system32" ^| find ":"') do (
-    for /f eol^=^"^ delims^=^" %%z in ('echo.%%x') do (
-        (icacls "%%z" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%") >> "./Процессы_подр".txt
-        if %ERRORLEVEL% EQU 0 echo. %%z >> "./Процессы_кратк".txt 
-    )
-)
+
 for /f "tokens=2 delims==" %%x in ('wmic process list full^|find /i "executablepath"^|find /i /v "system32"^|find ":"') do (
     for /f "tokens=* delims=" %%y in ('echo.%%x') do (
         icacls "%%~dpy\" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%" >> "./Процессы2_подр".txt
