@@ -390,6 +390,11 @@ KB2778930:"Vista, 7, 8, 2008, 2008R2, 2012, RT - hwnd_broadcast"
   )
 )
 
+echo Дамп прав процессов
+(wmic process list full 2>nul) >> "./Процессы_права".txt
+
+goto process_skip
+
 echo Проверка прав доступа к файлам процессов
 for /f "tokens=2 delims==" %%x in ('wmic process list full ^| find /i "executablepath" ^| find /i /v "system32" ^| find ":"') do (
     for /f eol^=^"^ delims^=^" %%z in ('echo.%%x') do (
@@ -403,6 +408,8 @@ for /f "tokens=2 delims==" %%x in ('wmic process list full^|find /i "executablep
         if %errorlevel% EQU 0  echo %%~dpy >> "./Процессы2_кратк".txt 
     )
 )
+
+:process_skip
 
 echo Права доступа к файлам служб
 for /f "tokens=2 delims='='" %%a in ('cmd.exe /c wmic service list full ^| findstr /i "pathname" ^|findstr /i /v "system32"') do (
