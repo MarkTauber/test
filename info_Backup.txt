@@ -1,0 +1,793 @@
+@echo off
+title [SearchEngine]
+setlocal enabledelayedexpansion
+rem chcp 65001 >nul
+rem chcp 1251 >nul
+set "starttime=%time%"
+set "folder=Data_%COMPUTERNAME%_%random%"
+cls
+
+echo Name:    [%folder%] 
+echo Start:   [%starttime%]
+echo Status:  [1\4]
+echo Process: [Collecting base information]
+echo ===============================
+
+md %folder%
+cd %folder%
+md sys_info
+cd sys_info
+
+echo [I] Scoring system information
+
+echo Username: %USERNAME% > "./SYS_Main.txt"
+echo Computer: %COMPUTERNAME% >> "./SYS_Main.txt"
+echo Home: %USERPROFILE%  >> "./SYS_Main.txt"
+whoami /all >> "./SYS_Main.txt"
+qwinsta  >> "./SYS_Main.txt"
+wmic os get osarchitecture >> "./SYS_Main.txt"
+
+echo [SYS] Local profiles
+(dir /b  %USERPROFILE%\.. 2>nul) > "./SYS_Local_profiles.txt"
+
+echo [SYS] Environment Variables
+(set 2>nul) > "./SYS_EnvironmentVariables.txt"
+
+echo [SYS] Hardware Information
+(systeminfo 2>nul) > "./SYS_HardwareInfo.txt"
+
+echo [SYS] Installed Software
+(wmic product get Name,Version 2>nul) > "./SYS_InstalledSoftware.txt"
+
+echo [SYS] Running Processes
+(tasklist 2>nul) > "./SYS_RunningProcesses.txt"
+
+echo [SYS] Logical Drives
+(wmic path win32_logicaldisk 2>nul) > "./SYS_LogicalDrives.txt"
+(wmic logicaldisk get caption 2>nul | more) >> "./SYS_LogicalDrives.txt"
+
+echo [SYS] Running Services
+(net start 2>nul) > "./SYS_RunningServices.txt"
+
+echo [SYS] Installed Services
+(sc queryex 2>nul) >> "./SYS_RunningServices.txt"
+
+echo [SYS] Connected Devices
+(wmic path Win32_PnPEntity where "ConfigManagerErrorCode = 0" 2>nul) > "./SYS_ConnectedDevices.txt"
+
+echo [SYS] Drivers
+(driverquery /SI 2>nul) > "./SYS_Drivers.txt"
+
+echo [SYS] Power Settings
+(powercfg -list 2>nul) > "./SYS_PowerSettings.txt"
+
+echo [SYS] WMI Information
+(wmic qfe 2>nul) > "./SYS_WMIInfo.txt"
+
+echo [SYS] Group Policy Settings
+(gpresult /r 2>nul) > "./SYS_GroupPolicySettings.txt"
+
+echo [SYS] Scheduled Tasks
+(schtasks /query /fo LIST /v 2>nul) > "./SYS_ScheduledTasks.txt"
+
+
+echo.
+echo [I] Scoring security information
+
+echo [SEC] Sessions
+(klist sessions 2>nul) > "./SEC_Sessions.txt"
+
+echo [SEC] Firewall Settings (Admin Rights)
+netsh advfirewall export "%CD%\SEC_FirewallSettings_Admin.txt" 2>nul
+
+echo [SEC] Firewall Settings (No Admin Rights)
+(netsh firewall show config 2>nul) > "./SEC_FirewallSettings_NoAdmin.txt"
+
+echo [SEC] Firewall Status
+(netsh firewall show state 2>nul) > "./SEC_FirewallStatus.txt"
+
+echo [SEC] Retrieve Firewall Profiles
+(netsh advfirewall show allprofiles 2>nul) > "./SEC_FirewallProfiles.txt"
+
+echo [SEC] Antivirus Search
+wmic /namespace:\\root\SecurityCenter2 path AntiVirusProduct get * > "./SEC_Antivirus.txt"
+(wmic /Node:localhost /Namespace:\\root\SecurityCenter2 Path AntiVirusProduct Get displayName /Format:List | more) >> "./SEC_Antivirus.txt"
+
+echo [SEC] Credentials Manager / Windows Vault
+(cmdkey /list 2>nul) > "./SEC_CredentialManager.txt"
+
+echo [SEC] Kerberos Tickets
+(klist 2>nul) > "./SEC_KerberosTickets.txt"
+
+echo [SEC] Certificates
+(certutil -store my 2>nul) > "./SEC_Certificates.txt"
+
+
+echo.
+echo [I] Scoring network information
+
+echo [NET] IP Configuration
+(ipconfig /all 2>nul) > "./NET_IPConfiguration.txt"
+
+echo [NET] DNS Cache
+(ipconfig /displaydns 2>nul) > "./NET_DNSCache.txt"
+
+echo [NET] ARP Cache
+(arp -a 2>nul) > "./NET_ARPCache.txt"
+
+echo [NET] Routing
+(netstat -r 2>nul) > "./NET_Routing.txt"
+
+echo [NET] Routing Table
+(route print 2>nul) > "./NET_RoutingTable.txt"
+
+echo [NET] Network Drives
+(net use 2>nul) > "./NET_NetworkDrives.txt"
+
+echo [NET] Network Resources
+(net view 2>nul) > "./NET_NetworkResources.txt"
+
+echo [NET] Connections
+(netstat -n -o -q -a 2>nul) > "./NET_Connections.txt"
+
+echo [NET] Network Adapters
+(wmic path win32_networkadapter 2>nul) > "./NET_NetworkAdapters.txt"
+
+echo [NET] Shared Resources
+(net share 2>nul) > "./NET_SharedResources.txt"
+
+
+echo.
+echo [I] Scoring group information
+
+echo [GRP] Logged-on Users
+(quser 2>nul) > "./GRP_LoggedOnUsers.txt"
+
+echo [GRP] Local Groups
+(net localgroup 2>nul) > "./GRP_LocalGroups.txt"
+
+echo [GRP] Domain Groups
+(net group /domain 2>nul) > "./GRP_DomainGroups.txt"
+
+echo [GRP] Domain User Information
+(net user %USERNAME% /domain 2>nul) > "./GRP_DomainUserInformation.txt"
+
+echo [GRP] Domain Users
+(net users /domain 2>nul) > "./GRP_DomainUsers.txt"
+
+
+echo.
+echo [I] Scoring journal information
+
+echo [JRN] Event Log Dump
+(wevtutil qe System /rd:true /f:text 2>nul) > "./JRN_EventLogDump.txt"
+
+
+echo ===============================
+echo.
+echo Preparing (5 sec.)
+timeout /t 5 >nul
+cd .. 
+md registry
+cd registry
+cls
+echo Name:    [%folder%] 
+echo Start:   [%starttime%]
+echo Status:  [2\4]
+echo Process: [Reading registry]
+echo ===============================
+
+
+
+echo Checking Basic Rights
+echo.
+reg query "HKCU\Software\Microsoft\Windows\CurrentVersion" >nul 2>&1
+if %errorlevel% == 0 (
+  echo [+] Read
+  echo Read - YES > "MAIN_Access.txt"
+) else (
+  echo [-] Read
+  echo Read - NO > "MAIN_Access.txt"
+  goto skip_reg
+)
+
+reg add "HKCU\Software\TestKey" /v "TestValue" /t REG_SZ /d "TestString" /f >nul 2>&1 
+if %errorlevel% == 0 (
+  echo [+] Edit
+  echo Edit - YES >> "MAIN_Access.txt"
+  reg delete "HKCU\Software\TestKey" /f >nul 2>&1 
+) else (
+  echo [-] Edit
+  echo Edit - NO >> "MAIN_Access.txt"
+)
+
+echo.
+echo Check reading of main paths
+echo.
+
+for %%i in (
+	HKCU\Software\Microsoft\Windows\CurrentVersion
+	HKCU\Software\Microsoft\Windows\
+	HKCU\Software\Microsoft\
+) do (
+	reg query "%%i" 2>nul | find /i "ERROR" >nul
+	if !errorlevel! == 0 (
+		echo [-] %%i
+	) else (
+    	echo [+] %%i
+	)
+)
+
+echo.
+echo Checking access to critical points
+echo.
+
+for %%K in (
+	HKLM\SYSTEM\CurrentControlSet\Services
+	HKCU\Software\Microsoft\Windows
+	HKCU\Software\Microsoft
+	HKCU\Software\Microsoft\Windows\CurrentVersion
+	HKLM\Software\Microsoft\Windows\CurrentVersion
+	HKLM\SYSTEM\CurrentControlSet
+	HKLM\SOFTWARE\Policies
+	HKLM\Software\Microsoft\Windows\CurrentVersion\Run
+	HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+	HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce
+	HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce
+) do (
+		echo [i] Testing %%K
+    reg add "%%K\Test" /v "TestKey" /t REG_SZ /d "TestData" /f >nul 2>&1
+    if !errorlevel!==0 (
+        echo [+] Write:  %%K
+        reg delete "%%K\Test" /f >nul 2>&1
+        echo [+] Delete: %%K
+		echo %%K >> "./REG_CriticalAcess.txt"
+    ) else (
+        echo [-] Write:  %%K
+    )
+	echo.
+)
+
+echo Checking available services
+echo.
+
+for /f %%a in ('reg query hklm\system\currentcontrolset\services') do (
+  if not "%%a"=="" (  
+    for /f "delims=" %%a in ('reg add "%%a" /v TestKey /t REG_SZ /d "TestValue" /f 2^>^&1') do (
+		set "output=%%a"
+	)
+	echo !output!| findstr /i "ERROR" >nul
+	if !errorlevel! == 0 (
+		title [SearchEngine]
+	) else (
+		echo [+] %%a
+		echo %%a >> "./REG_AvailableServices.txt"
+		reg delete "%%a" /v TestKey /f >nul 2>&1
+	)  
+    ) else (
+      echo [X] %%a 
+    )
+  )
+  echo.
+)
+
+echo.
+echo [I] Security Policies
+
+echo [SEC] Audit Configuration
+(reg query "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System\Audit" /s 2>nul) > "./SEC_AuditConfiguration.txt"
+
+echo [SEC] Audit Events
+(reg query "HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\EventLog\EventForwarding\SubscriptionManager" /s 2>nul) > "./SEC_AuditEvents.txt"
+
+echo [SEC] AdmPwd LAPS Policy (Local Administrator Password Solution)
+(reg query "HKEY_LOCAL_MACHINE\Software\Policies\Microsoft Services\AdmPwd" /s 2>nul) > "./SEC_AdmPwdPolicy.txt"
+
+echo [SEC] LAPS Backup Directory Location
+(reg query "HKEY_LOCAL_MACHINE\Software\Microsoft\Policies\LAPS" /v BackupDirectory 2>nul) > "./SEC_LAPSBackupDirectory.txt"
+(reg query "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\LAPS" /v BackupDirectory 2>nul) >> "./SEC_LAPSBackupDirectory.txt"
+
+echo [SEC] Credential Guard Status
+(reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\LSA" /v LsaCfgFlags 2>nul) > "./SEC_CredentialGuardStatus.txt"
+
+echo [SEC] WDigest Status
+(reg query "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest\UseLogonCredential" 2>nul) > "./SEC_WDigestStatus.txt"
+
+echo [SEC] UAC (User Account Control)
+(reg query "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System" 2>nul) > "./SEC_UACSettings.txt"
+
+echo [SEC] UAC Settings
+(reg query "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA 2>nul) > "./SEC_UACSpecificSettings.txt"
+
+echo [SEC] PowerShell Data
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1\PowerShellEngine" /s 2>nul) > "./SEC_PowerShellData.txt"
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\3\PowerShellEngine" /s 2>nul) >> "./SEC_PowerShellData.txt"
+
+echo [SEC] PowerShell Settings
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /s 2>nul) > "./SEC_PowerShellSettings.txt"
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging" /s 2>nul) >> "./SEC_PowerShellSettings.txt"
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" /s 2>nul) >> "./SEC_PowerShellSettings.txt"
+
+echo [SEC] WSUS (Windows Server Update Services) Settings
+(reg query "HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\WindowsUpdate" /s 2>nul) > "./SEC_WSUSSettings.txt"
+
+echo [SEC] LSA (Local Security Authority)
+(reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\LSA" /s 2>nul) > "./SEC_LSA.txt"
+
+echo [SEC] Image File Execution Options
+(reg query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" /s 2> nul) >> "./SEC_ImageFileExecutionOptions.txt"
+
+
+echo.
+echo [I] Accounts and Authentication
+
+echo [AUT] Guest Logon
+(reg query "HKLM\System\CurrentControlSet\Control\Lsa" /v "ForceGuest" 2>nul) > "./AUT_GuestLogon.txt"
+
+echo [AUT] LSA Protection
+(reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\LSA" /v RunAsPPL 2>nul) > "./AUT_LSAProtection.txt"
+
+echo [AUT] Winlogon Registry Data
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" 2>nul) > "./AUT_WinlogonData.txt"
+
+echo [AUT] Cached Logon Count
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v CACHEDLOGONSCOUNT 2>nul) > "./AUT_CachedLogonCount.txt"
+
+echo [AUT] Shell Data
+(reg query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /s 2> nul) >> "./AUT_ShellData.txt"
+
+
+echo.
+echo [I] Software Management
+
+echo [SFT] Software Search
+(reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" /s 2>nul) > "./SFT_SoftwareList.txt"
+(reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall" /s 2>nul) >> "./SWM_SoftwareList.txt"
+
+echo [SFT] MSI Privileges
+(reg query "HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer" /v AlwaysInstallElevated 2> nul) > "./SFT_MSIPrivileges.txt"
+(reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer" /v AlwaysInstallElevated 2> nul) >> "./SFT_MSIPrivileges.txt"
+(reg query "HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer\AlwaysInstallElevated" /s 2> nul) >> "./SFT_MSIPrivileges.txt"
+(reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer\AlwaysInstallElevated" /s 2> nul) >> "./SFT_MSIPrivileges.txt"
+
+
+echo.
+echo [I] Startup management
+
+echo [RUN] Startup Entries
+(reg query "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" /s 2>nul) > "./RUN_StartupEntries.txt"
+(reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /s 2>nul) >> "./RUN_StartupEntries.txt"
+(reg query "HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce " /s 2>nul) > "./RUN_StartupOnceEntries.txt"
+(reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce " /s 2>nul) >> "./RUN_StartupOnceEntries.txt"
+
+
+echo.
+echo [I] Search for potential vulnerabilities
+
+echo [VLN] Hardcoded Password Search
+(reg query "HKEY_LOCAL_MACHINE\SOFTWARE\RealVNC\WinVNC4" /v password 2>nul) >> "./VLN_HardcodedPasswords.txt"
+(reg query "HKLM\SOFTWARE\Microsoft\Windows NT\Currentversion\Winlogon" 2>nul | findstr /i "DefaultDomainName DefaultUserName DefaultPassword AltDefaultDomainName AltDefaultUserName AltDefaultPassword LastUsedUsername") >> "./VLN_HardcodedPasswords.txt"
+(reg query "HKLM\SYSTEM\CurrentControlSet\Services\SNMP" /s 2>nul) >> "./VLN_HardcodedPasswords.txt"
+(reg query "HKCU\Software\TightVNC\Server" 2>nul) >> "./VLN_HardcodedPasswords.txt"
+(reg query "HKCU\Software\SimonTatham\PuTTY\Sessions" /s 2>nul) >> "./VLN_HardcodedPasswords.txt"
+(reg query "HKCU\Software\OpenSSH\Agent\Keys" /s 2>nul) >> "./VLN_HardcodedPasswords.txt"
+
+:skip_reg
+
+
+echo ===============================
+echo.
+echo Preparing (5 sec)
+timeout /t 5 >nul
+cd .. 
+md security
+cd security 
+set "home=%CD%"
+cls
+
+echo Name:    [%folder%] 
+echo Start:   [%starttime%]
+echo Status:  [3\4]
+echo Process: [Additional information]
+echo ===============================
+
+echo Checking for missing hotfixes
+
+for %%i in (
+KB977165:"MS10-015; 2K, XP, 2K3, 2K8, Vista, 7 - User Mode to Ring"
+KB941693:"MS08-025; 2K/SP4, XP/SP2, 2K3/SP1/2, 2K8/SP0, Vista/SP0/1 - win32k.sys"
+KB920958:"MS06-049; 2K/SP4 - ZwQuerySysInfo"
+KB914389:"MS06-030; 2K,XP/SP2 - Mrxsmb.sys"
+KB908523:"MS05-055; 2K/SP4 - APC Data-Free"
+KB890859:"MS05-018; 2K/SP3/4, XP/SP1/2 - CSRSS"
+KB842526:"MS04-019; 2K/SP2/3/4 - Utility Manager"
+KB835732:"MS04-011; 2K/SP2/3/4, XP/SP0/1 - LSASS service BoF"
+KB841872:"MS04-020; 2K/SP4 - POSIX"
+KB982799:"MS10-059; 2K8, Vista, 7/SP0 - Chimichurri"
+KB979683:"MS10-021; 2K/SP4, XP/SP2/3, 2K3/SP2, 2K8/SP2, Vista/SP0/1/2, 7/SP0 - Win Kernel"
+KB981957:"MS10-073; XP/SP2/3, 2K3/SP2/2K8/SP2, Vista/SP1/2, 7/SP0 - Keyboard Layout"
+KB2592799:"MS11-080; XP/SP3, 2K3/SP3 - afd.sys"
+KB3143141:"MS16-032; 2K8/SP1/2, Vista/SP2, 7/SP1 - secondary logon"
+KB2393802:"MS11-011; XP/SP2/3, 2K3/SP2, 2K8/SP2, Vista/SP1/2, 7/SP0 - WmiTraceMessageVa"
+KB2305420:"MS10-092; 2K8/SP0/1/2, Vista/SP1/2, 7/SP0 - Task Sched"
+KB4013081:"MS17-017; 2K8/SP2, Vista/SP2, 7/SP1 - Registry Hive Loading"
+KB2975684:"MS14-040; 2K3/SP2, 2K8/SP2, Vista/SP2, 7/SP1 - afd.sys Dangling Pointer"
+KB3136041:"MS16-016; 2K8/SP1/2, Vista/SP2, 7/SP1 - WebDAV to Addres"
+KB3057191:"MS15-051; 2K3/SP2, 2K8/SP2, Vista/SP2, 7/SP1 - win32k.sys"
+KB2989935:"MS14-070; 2K3/SP2 - TCP/IP"
+KB2850851:"7SP0/SP1_x86 - schlamperei"
+KB2870008:"7SP0/SP1_x86 - track_popup_menu"
+KB2778930:"Vista, 7, 8, 2008, 2008R2, 2012, RT - hwnd_broadcast"
+) do (
+  for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+    
+	wmic qfe get HotFixID | findstr /C:"%%a" 1>nul
+	if !errorlevel! equ 0 (
+		echo [-] %%a
+	) else (
+		echo [+] %%a - %%b
+		echo %%a - %%b >> "./SEC_missing_hotfixes.txt"
+	)
+  )
+)
+
+echo Process Dump
+(wmic process list full 2>nul) >> "./PRC_ProcessDump.txt"
+
+rem goto process_skip
+
+echo Checking File Access Permissions for Non-System32 Processes
+for /f "tokens=2 delims==" %%x in ('wmic process list full ^| find /i "executablepath" ^| find /i /v "system32" ^| find ":"') do (
+    for /f eol^=^"^ delims^=^" %%z in ('echo.%%x') do (
+        (icacls "%%z" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%") >> "./PRC_DetailedProcessPermissions".txt
+        if %ERRORLEVEL% EQU 0 echo. %%z >> "./PRC_SummaryProcessPermissions".txt 
+    )
+)
+for /f "tokens=2 delims==" %%x in ('wmic process list full^|find /i "executablepath"^|find /i /v "system32"^|find ":"') do (
+    for /f "tokens=* delims=" %%y in ('echo.%%x') do (
+        icacls "%%~dpy\" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos %username%" >> "./PRC_DetailedProcessDirectoryPermissions".txt
+        if %errorlevel% EQU 0  echo %%~dpy >> "./PRC_SummaryProcessDirectoryPermissions".txt 
+    )
+)
+
+:process_skip
+
+echo Checking Service File Access Permissions
+for /f "tokens=2 delims='='" %%a in ('cmd.exe /c wmic service list full ^| findstr /i "pathname" ^|findstr /i /v "system32"') do (
+    for /f eol^=^"^ delims^=^" %%b in ("%%a") do (
+	(icacls "%%b" 2>nul | findstr /i "(F) (M) (W) :\\" | findstr /i ":\\ everyone authenticated users todos usuarios %username%" 2>nul) >> "./PRM_ServiceFilePermissions.txt"
+	)
+)
+
+echo Finding Services with Unquoted Executable Paths
+for /f "tokens=2" %%n in ('sc query state^= all^| findstr SERVICE_NAME') do (
+	for /f "delims=: tokens=1*" %%r in ('sc qc "%%~n" ^| findstr BINARY_PATH_NAME ^| findstr /i /v /l /c:"c:\windows\system32" ^| findstr /v /c:""""') do (
+		ECHO.%%~s ^| findstr /r /c:"[a-Z][ ][a-Z]" >nul 2>&1 
+		(ECHO.%%n && ECHO.%%~s && icacls %%s | findstr /i "(F) (M) (W) :\" | findstr /i ":\\ everyone authenticated users todos %username%") >> "./PRM_ServicesWithUnquotedPaths.txt"
+	)
+)
+
+echo Checking Access Permissions for Files in the PATH Environment Variable
+for %%A in ("%path:;=";"%") do ( 
+(cmd.exe /c icacls "%%~A" 2>nul | findstr /i "(F) (M) (W) :\" | findstr /i ":\\ everyone authenticated users todos %username%") >> "./PRM_PATHPermissions.txt"
+)
+
+echo ===============================
+echo.
+echo Preparing(5 sec)
+timeout /t 5 >nul
+cd .. 
+md files
+cd files
+cls 
+set "home=%CD%" 
+rem > "%home%\\test.txt"
+
+echo Name:    [%folder%] 
+echo Start:   [%starttime%]
+echo Status:  [4\4]
+echo Process: [Searching in file system]
+echo ===============================
+
+echo Checking Credentials in the appdata
+dir /b/a %appdata%\Microsoft\Credentials\ > "./Credentials_Appdata.txt"
+dir /b/a %localappdata%\Microsoft\Credentials\ >> "./Credentials_Appdata.txt"
+
+echo Checking interesting files
+for %%i in (
+%SystemRoot%\System32\drivers\etc\hosts@hosts.txt
+%APPDATA%\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt@ConsoleHost_history.txt
+) do (
+  for /f "tokens=1,2 delims=@" %%a in ("%%i") do (
+  if exist "%%a" (
+    echo [+] %%a
+    echo %%a  > "%home%\%%b"
+  ) else (
+    echo [-] %%a
+  )
+  )
+)
+
+
+
+echo Sorting Program Files
+(dir /b "C:\Program Files" "C:\Program Files (x86)" | sort) > "%home%\\Program_Files.txt"
+
+echo Transcript history
+(dir %SystemDrive%\transcripts\ 2>nul) > "./transcripts.txt"
+
+
+echo Checking SystemDrive
+cd "%SystemDrive%\Microsoft\Group Policy\history"
+for %%i in (
+Groups.xml:SD_Groups_xml.txt
+Services.xml:SD_Services_xml.txt
+Scheduledtasks.xml:SD_Scheduledtasks_xml.txt
+DataSources.xml:SD_DataSources_xml.txt
+Printers.xml:SD_Printers_xml.txt
+Drives.xml:SD_Drives.txt
+) do (
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo [I] %%a
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+echo Group Policies
+cd "%windir%\..\Documents and Settings\All Users\Application Data\Microsoft\Group Policy\history"
+for %%i in (
+Groups.xml:GP_Groups_xml.txt
+Services.xml:GP_Services_xml.txt
+Scheduledtasks.xml:GP_Scheduledtasks_xml.txt
+DataSources.xml:GP_DataSources_xml.txt
+Printers.xml:GP_Printers_xml.txt
+Drives.xml:GP_Drives.txt
+) do (
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo [I] %%a
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+echo User Profile Credential Scan
+cd "%SystemDrive%\Users"
+for %%i in (
+.aws:USR_aws.txt
+credentials:USR_credentials.txt
+gcloud:USR_gcloud.txt
+credentials.db:USR_credentials.db.txt
+legacy_credentials:USR_legacy_credentials.txt
+access_tokens.db:USR_access_tokens.db.txt
+.azure:USR_azure.txt
+accessTokens.json:USR_accessTokens_json.txt
+azureProfile.json:USR_azureProfile_json.txt
+) do (
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo [I] %%a
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+echo Documents and Settings Credential Scan
+cd "%windir%\..\Documents and Settings"
+for %%i in (
+.aws:DaS_aws.txt
+credentials:DaS_credentials.txt
+gcloud:DaS_gcloud.txt
+credentials.db:DaS_credentials.db.txt
+legacy_credentials:DaS_legacy_credentials.txt
+access_tokens.db:DaS_access_tokens.db.txt
+.azure:DaS_azure.txt
+accessTokens.json:DaS_accessTokens_json.txt
+azureProfile.json:DaS_azureProfile_json.txt
+) do (
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo [I] %%a
+	(dir /s /b "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+cd \
+echo Filename search
+for %%i in (
+RDCMan.settings:RDCMan.txt
+SCClient.exe:SCClient.txt
+.sudo_as_admin_successful:sudo_as_admin_successful.txt
+.profile:profile.txt
+httpd.conf:httpd_conf.txt
+.htpasswd:htpasswd.txt
+.git-credentials:git_credentials.txt
+hosts.equiv:hosts_equiv.txt
+Dockerfile:Dockerfile.txt
+docker-compose.yml:docker_compose.txt
+appcmd.exe:appcmd.txt
+TypedURLs:TypedURLs.txt
+TypedURLsTime:TypedURLsTime.txt
+History:History.txt
+Bookmarks:Bookmarks.txt
+Cookies:Cookies.txt
+"Login Data":Login_Data.txt
+places.sqlite:places.txt
+key3.db:key3.txt
+key4.db:key4.txt
+credentials:credentials.txt
+credentials.db:credentials_db.txt
+access_tokens.db:access_tokens.txt
+accessTokens.json:accessTokens.txt
+legacy_credentials:legacy_credentials.txt
+azureProfile.json:azureProfile.txt
+unattend.txt:unattend.txt
+access.log:access_log.txt
+error.log:error_log.txt
+known_hosts:known_hosts.txt
+id_rsa:id_rsa.txt
+id_dsa:id_dsa.txt
+anaconda-ks.cfg:anaconda_ks.txt
+hostapd.conf:hostapd.txt
+rsyncd.conf:rsyncd.txt
+cesi.conf:cesi.txt
+supervisord.conf:supervisord.txt
+tomcat-users.xml:tomcat_users.txt
+KeePass.config:KeePass.txt
+Ntds.dit:Ntds.txt
+SAM:SAM.txt
+SYSTEM:SYSTEM.txt
+FreeSSHDservice.ini:FreeSSHDservice.txt
+sysprep.inf:sysprep_inf.txt
+sysprep.xml:sysprep_xml.txt
+unattend.xml:unattend_xml.txt
+unattended.xml:unattended_xml.txt
+groups.xml:groups.txt
+services.xml:services.txt
+scheduledtasks.xml:scheduledtasks.txt
+printers.xml:printers.txt
+drives.xml:drives.txt
+datasources.xml:datasources.txt
+php.ini:php.txt
+https.conf:https_conf.txt
+https-xampp.conf:https_xampp_conf.txt
+httpd.conf:httpd_conf2.txt
+my.ini:my_ini.txt
+my.cnf:my_cnf.txt
+access.log:access_log2.txt
+error.log:error_log2.txt
+server.xml:server.txt
+SiteList.xml:SiteList.txt
+ConsoleHost_history.txt:ConsoleHost_history.txt
+setupinfo:setupinfo.txt
+setupinfo.bak:setupinfo_bak.txt
+web.config:web_config.txt
+) do (
+
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo [I] %%a
+	(dir /s /b /A:-D %%a 2>nul | findstr /v ".dll" | findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+echo Search for occurrences in file name
+for %%i in (
+pass:pass_infiles.txt
+cred:cred_infiles.txt
+vnc:vnc_infiles.txt
+password:password_infiles.txt
+credential:credential_infiles.txt
+config:config_infiles.txt
+ssh:ssh_infiles.txt
+elasticsearch:elasticsearch_infiles.txt
+) do (
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo [I] %%a
+	(dir /s /b /A:-D "*%%a*" 2>nul | findstr /v ".dll"| findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+echo Search by extensions
+for %%i in (
+.rdg:rdg_files.txt
+_history:history_files.txt
+bashrc:bashrc_files.txt
+.plan:plan_files.txt
+.rhosts:rhosts_files.txt
+.ovpn:ovpn_files.txt
+.kdbx:kdbx_files.txt
+.p12:p12_files.txt
+.der:der_files.txt
+.csr:csr_files.txt
+.cer:cer_files.txt
+.gpg:gpg_files.txt
+.pgp:pgp_files.txt
+.config:config_files.txt
+.cfg:cfg_files.txt
+.log:log_files.txt
+.bak:bak_files.txt
+.db:db_files.txt
+) do (
+	for /f "tokens=1,2 delims=:" %%a in ("%%i") do (
+	echo [I] %%a
+	(dir /s /b /A:-D "*%%a" 2>nul | findstr /v /i "%home%") > "%home%\%%b"
+  )
+)
+
+rem Я б с радостью сделал список, но оно не работает с символами типа *. Мб потом разделю, посмотрим
+(dir /s /b /A:-D *vnc*.ini 2>nul | findstr /v /i "%home%") > "%home%\vnc_ini.txt"
+(dir /s /b /A:-D *vnc*.c*nf* 2>nul | findstr /v /i "%home%") > "%home%\vnc_configs.txt"
+(dir /s /b /A:-D *vnc*.txt 2>nul | findstr /v /i "%home%") > "%home%\vnc_txt.txt"
+(dir /s /b /A:-D *vnc*.xml 2>nul | findstr /v /i "%home%") > "%home%\vnc_xml.txt"
+(dir /s /b /A:-D *config*.php 2>nul | findstr /v /i "%home%") > "%home%\config_php.txt"
+(dir /s /b /A:-D elasticsearch.y*ml 2>nul | findstr /v /i "%home%") > "%home%\elasticsearch.y_ml.txt"
+(dir /s /b /A:-D kibana.y*ml 2>nul | findstr /v /i "%home%") > "%home%\kibana_yml.txt"
+
+
+echo checking list of interesting files
+for %%K in (
+%WINDIR%\sysprep\sysprep.xml
+%WINDIR%\sysprep\sysprep.inf
+%WINDIR%\sysprep.inf
+%WINDIR%\Panther\Unattended.xml
+%WINDIR%\Panther\Unattend.xml
+%WINDIR%\Panther\Unattend\Unattend.xml
+%WINDIR%\Panther\Unattend\Unattended.xml
+%WINDIR%\System32\Sysprep\unattend.xml
+%WINDIR%\System32\Sysprep\unattended.xml
+%WINDIR%..\unattend.txt
+%WINDIR%..\unattend.inf
+%WINDIR%\repair\SAM
+%WINDIR%\System32\config\RegBack\SAM
+%WINDIR%\System32\config\SAM
+%WINDIR%\repair\SYSTEM
+%WINDIR%\System32\config\SYSTEM
+%WINDIR%\System32\config\RegBack\SYSTEM
+%WINDIR%\Windows\appcompat\appcompat.txt
+c:\sysprep.inf
+c:\sysprep\sysprep.xml
+c:\boot.ini
+) do (
+  if exist "%%K" (
+    echo [+] %%K
+	echo %%K >> "./interesting_files.txt"
+  ) else (
+    echo [-] %%K
+  )
+)
+
+echo checking list of interesting paths
+for %%K in (
+"C:\Documents and Settings\All Users\Start Menu\Programs\Startup"
+"C:\Documents and Settings\%username%\Start Menu\Programs\Startup"
+"%programdata%\Microsoft\Windows\Start Menu\Programs\Startup"
+"%appdata%\Microsoft\Windows\Start Menu\Programs\Startup"
+"%SystemDrive%\transcripts\"
+) do (
+  if exist "%%K" (
+    echo [+] %%K
+	dir /A %%K >> "./interesting_paths.txt"
+  ) else (
+    echo [-] %%K
+  )
+)
+
+cd %home%\..
+cls
+echo Name:    [%folder%] 
+echo Start:   [%starttime%]
+echo Status:  [4\4]
+echo Process: [Cleaning]
+echo ==============================
+for /f "delims=" %%i in ('2^>nul dir/ad/b') do (
+ for /f "delims=" %%j in ('2^>nul dir/a-d/b/s "%%i"') do (
+  if %%~zj equ 0 del/a/f "%%j"&& set f=%%j&& (
+   cmd/v/c echo [-] !f:*%CD%\=!
+   cmd/v/c echo !f:*%CD%\=! >> "./Error_log.txt"
+  )
+ )
+)
+timeout /t 5 >nul
+
+cls
+echo Name:    [%folder%] 
+echo Start:   [%starttime%]
+echo End:     [%time%]
+pause
+
+endlocal
