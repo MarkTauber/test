@@ -101,7 +101,7 @@ echo Драйвера
 echo Credentials manager / Windows vault
 (cmdkey /list 2>nul) > "./cmdkey.txt"
 
-echo икеты кербероса
+echo Тикеты кербероса
 (klist 2>nul) > "./Керберос_тикеты.txt"
 
 echo Дамп журнала событий
